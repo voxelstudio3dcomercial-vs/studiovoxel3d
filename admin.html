@@ -201,6 +201,22 @@ textarea{resize:vertical;min-height:80px}
 .bar:hover{opacity:1}
 .bar-label{font-size:9px;color:var(--text3);font-family:'Share Tech Mono',monospace}
 
+/* MOBILE RESPONSIVO */
+@media (max-width: 768px) {
+  body { overflow-x: hidden; }
+  .sidebar { position: fixed; left: 0; top: 0; bottom: 0; transform: translateX(-100%); z-index: 300; transition: transform 0.3s; min-height: 100vh; }
+  .sidebar.open { transform: translateX(0); }
+  .sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 299; backdrop-filter: blur(3px); }
+  .sidebar-overlay.open { display: block; }
+  .hamburger { display: flex !important; }
+  .main { width: 100%; }
+  .cards-grid { grid-template-columns: 1fr 1fr; }
+  .calc-grid { grid-template-columns: 1fr; }
+  .form-row { grid-template-columns: 1fr; }
+  .content { padding: 14px; }
+  table { font-size: 12px; }
+  th, td { padding: 8px 10px; }
+}
 /* CALC */
 .calc-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}
 .calc-panel{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:20px}
@@ -257,8 +273,9 @@ textarea{resize:vertical;min-height:80px}
 
 <!-- MAIN -->
 <div class="main" id="mainEl" style="display:none">
-  <div class="topbar">
-    <span class="page-title" id="pageTitle">PAINEL</span>
+  <div class="sidebar-overlay" id="adminSidebarOverlay" onclick="closeSidebar()"></div>
+<div class="topbar">
+    <button class="hamburger" id="hambBtn" onclick="toggleSidebar()" style="display:none;background:none;border:1px solid var(--border);border-radius:6px;padding:6px 10px;cursor:pointer;color:var(--text);font-size:18px;margin-right:10px">☰</button><span class="page-title" id="pageTitle">PAINEL</span>
     <button class="btn btn-primary" id="topbarActionBtn" onclick="openModalByPage()">+ Nova Ação</button>
   </div>
   <div class="content">
@@ -493,6 +510,17 @@ function toggleEye(inputId, btn) {
   const el = document.getElementById(inputId);
   if (el.type === 'password') { el.type = 'text'; btn.textContent = '🙈'; }
   else { el.type = 'password'; btn.textContent = '👁'; }
+}
+
+function toggleSidebar(){
+  const s=document.getElementById("sidebarEl");
+  const o=document.getElementById("adminSidebarOverlay");
+  s.classList.toggle("open");
+  o.classList.toggle("open");
+}
+function closeSidebar(){
+  document.getElementById("sidebarEl").classList.remove("open");
+  document.getElementById("adminSidebarOverlay").classList.remove("open");
 }
 
 function doLogin() {
