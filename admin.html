@@ -228,6 +228,19 @@ textarea{resize:vertical;min-height:80px}
 .result-total{margin-top:14px;padding:14px;background:rgba(105,240,174,0.05);border:1px solid rgba(105,240,174,0.2);border-radius:6px;text-align:center}
 .result-total-label{font-size:9px;letter-spacing:3px;color:var(--text3);text-transform:uppercase;font-family:'Share Tech Mono',monospace;margin-bottom:6px}
 .result-total-value{font-family:'Orbitron',monospace;font-size:26px;font-weight:900;color:var(--green)}
+
+@media (max-width: 768px) {
+  .sidebar { position: fixed; left: 0; top: 0; bottom: 0; transform: translateX(-100%); z-index: 300; transition: transform 0.3s; }
+  .sidebar.open { transform: translateX(0); }
+  .sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 299; }
+  .sidebar-overlay.open { display: block; }
+  #hambBtn { display: inline-block !important; }
+  .cards-grid { grid-template-columns: 1fr 1fr; }
+  .calc-grid { grid-template-columns: 1fr; }
+  .form-row { grid-template-columns: 1fr; }
+  .content { padding: 14px; }
+  th, td { padding: 8px 8px; font-size: 12px; }
+}
 </style>
 </head>
 <body>
@@ -268,14 +281,16 @@ textarea{resize:vertical;min-height:80px}
     <div class="nav-item" onclick="showPage('bonus',this)"><span class="icon">🎁</span>Bônus</div>
     <div class="nav-item" onclick="showPage('configuracoes',this)"><span class="icon">⚙️</span>Configurações</div>
   </nav>
-  <div class="sidebar-footer">v3.0 · Studio Voxel 3D<br><span style="color:var(--green)">● admin</span> <span id="syncStatus" style="font-size:9px">☁️ sync</span> <span style="float:right;cursor:pointer;color:var(--text3)" onclick="logout()">sair</span></div>
+  <div class="sidebar-footer">v3.0 · Studio Voxel 3D<br><span style="color:var(--green)">● admin</span> <span id="syncStatus" style="font-size:9px;color:var(--text3)">☁️ sync</span> <span style="float:right;cursor:pointer;color:var(--text3)" onclick="logout()">sair</span></div>
 </aside>
+
+<div class="sidebar-overlay" id="adminSidebarOverlay" onclick="closeSidebar()"></div>
 
 <!-- MAIN -->
 <div class="main" id="mainEl" style="display:none">
-  <div class="sidebar-overlay" id="adminSidebarOverlay" onclick="closeSidebar()"></div>
+  
 <div class="topbar">
-    <button class="hamburger" id="hambBtn" onclick="toggleSidebar()" style="display:none;background:none;border:1px solid var(--border);border-radius:6px;padding:6px 10px;cursor:pointer;color:var(--text);font-size:18px;margin-right:10px">☰</button><span class="page-title" id="pageTitle">PAINEL</span>
+    <button id="hambBtn" onclick="toggleSidebar()" style="background:none;border:1px solid var(--border);border-radius:6px;padding:6px 10px;cursor:pointer;color:var(--text);font-size:18px;margin-right:10px;display:none">☰</button><span class="page-title" id="pageTitle">PAINEL</span>
     <button class="btn btn-primary" id="topbarActionBtn" onclick="openModalByPage()">+ Nova Ação</button>
   </div>
   <div class="content">
@@ -495,7 +510,6 @@ textarea{resize:vertical;min-height:80px}
 <div class="notification" id="notif">✓ <span id="notif-text">Salvo!</span></div>
 <script>
 
-// ===== SINCRONIZAÇÃO JSONBIN =====
 const API_KEY = '$2a$10$SUKnGGmCXoa5SDqEAkE5p.SZIIK27EadNFMxfucoChmmin3UbtNYG';
 const API_URL = 'https://api.jsonbin.io/v3/b';
 let BIN_ID = localStorage.getItem('voxel_bin_id') || null;
@@ -506,66 +520,59 @@ async function initBin() {
   try {
     const res = await fetch(API_URL, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Master-Key': API_KEY,
-        'X-Bin-Name': 'voxel3d-dados'
-      },
-      body: JSON.stringify({
-        clientes:[], produtos:[], movs:[], acertos:[], pedidos:[],
-        contrato:'', bonus:{meta:10,brinde:'',desc:'',ativo:false},
-        config:{wpp:'',nome:'Studio Voxel 3D',comissao:30}
-      })
+      headers: {'Content-Type':'application/json','X-Master-Key':API_KEY,'X-Bin-Name':'voxel3d-dados'},
+      body: JSON.stringify({clientes:[],produtos:[],movs:[],acertos:[],pedidos:[],contrato:'',bonus:{meta:10,brinde:'',desc:'',ativo:false},config:{wpp:'',nome:'Studio Voxel 3D',comissao:30}})
     });
     const d = await res.json();
-    if (d.metadata?.id) {
+    if (d.metadata && d.metadata.id) {
       BIN_ID = d.metadata.id;
       localStorage.setItem('voxel_bin_id', BIN_ID);
-      console.log('Bin criado:', BIN_ID);
       return true;
     }
-  } catch(e) { console.error('Erro ao criar bin:', e); }
+  } catch(e) { console.log('initBin error:', e); }
   return false;
 }
 
-async function syncLoad() {
-  if (!BIN_ID) await initBin();
+async function cloudLoad() {
+  if (!BIN_ID) { await initBin(); }
   if (!BIN_ID) return null;
   try {
     const res = await fetch(API_URL + '/' + BIN_ID + '/latest', {
-      headers: { 'X-Master-Key': API_KEY }
+      headers: {'X-Master-Key': API_KEY}
     });
     const d = await res.json();
     return d.record || null;
-  } catch(e) { console.error('Erro ao carregar:', e); return null; }
+  } catch(e) { return null; }
 }
 
-async function syncSave(dataObj) {
-  if (!BIN_ID) await initBin();
+async function cloudSave(obj) {
+  if (!BIN_ID) { await initBin(); }
   if (!BIN_ID || isSyncing) return;
   isSyncing = true;
   try {
     await fetch(API_URL + '/' + BIN_ID, {
       method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Master-Key': API_KEY
-      },
-      body: JSON.stringify(dataObj)
+      headers: {'Content-Type':'application/json','X-Master-Key':API_KEY},
+      body: JSON.stringify(obj)
     });
-  } catch(e) { console.error('Erro ao salvar:', e); }
+    showSyncStatus(true);
+  } catch(e) { showSyncStatus(false); }
   isSyncing = false;
 }
 
 function showSyncStatus(ok) {
   const el = document.getElementById('syncStatus');
-  if (el) {
-    el.textContent = ok ? '☁️ Sincronizado' : '⚠️ Offline';
-    el.style.color = ok ? 'var(--green)' : 'var(--orange)';
-  }
+  if (el) { el.textContent = ok ? '☁️ sync' : '⚠️ offline'; el.style.color = ok ? 'var(--green)' : 'var(--orange)'; }
 }
-// ===== FIM SINCRONIZAÇÃO =====
 
+function toggleSidebar() {
+  document.getElementById('sidebarEl').classList.toggle('open');
+  document.getElementById('adminSidebarOverlay').classList.toggle('open');
+}
+function closeSidebar() {
+  document.getElementById('sidebarEl').classList.remove('open');
+  document.getElementById('adminSidebarOverlay').classList.remove('open');
+}
 let ADMIN_PASS = localStorage.getItem('voxel_admin_pass') || 'Eqkzq301209$';
 let qtdMap = { pQtd:1, mQtd:1 };
 let prodImgData = '';
@@ -614,26 +621,26 @@ function doLogin() {
 function logout() { saveData(); document.getElementById('loginScreen').style.display = 'flex'; document.getElementById('sidebarEl').style.display = 'none'; document.getElementById('mainEl').style.display = 'none'; document.getElementById('loginPass').value = ''; }
 function saveData() {
   try { localStorage.setItem('voxel_admin', JSON.stringify(data)); } catch(e){}
-  syncSave(data).then(()=>showSyncStatus(true)).catch(()=>showSyncStatus(false));
+  cloudSave(data);
 }
 function loadData() {
   try { const d = localStorage.getItem('voxel_admin'); if(d) data = {...data, ...JSON.parse(d)}; } catch(e){}
-  syncLoad().then(remote => {
+  cloudLoad().then(function(remote) {
     if (remote) {
-      data = {...data, ...remote};
+      data = Object.assign({}, data, remote);
       try { localStorage.setItem('voxel_admin', JSON.stringify(data)); } catch(e){}
-      showSyncStatus(true);
     }
     renderClientes(); renderVitrine(); renderMovs(); renderAcertos(); renderPedidos(); renderBonus();
-    if(data.contrato){document.getElementById('contratoEditor').value=data.contrato;document.getElementById('contratoPreview').textContent=data.contrato;}
-    if(data.bonus){document.getElementById('bonus-meta').value=data.bonus.meta||10;document.getElementById('bonus-brinde').value=data.bonus.brinde||'';document.getElementById('bonus-desc').value=data.bonus.desc||'';document.getElementById('bonus-ativo').checked=data.bonus.ativo||false;}
-    if(data.config){document.getElementById('cfg-wpp').value=data.config.wpp||'';document.getElementById('cfg-nome').value=data.config.nome||'Studio Voxel 3D';document.getElementById('cfg-com').value=data.config.comissao||30;}
+    if (data.contrato) { document.getElementById('contratoEditor').value = data.contrato; document.getElementById('contratoPreview').textContent = data.contrato; }
+    if (data.bonus) { document.getElementById('bonus-meta').value = data.bonus.meta||10; document.getElementById('bonus-brinde').value = data.bonus.brinde||''; document.getElementById('bonus-desc').value = data.bonus.desc||''; document.getElementById('bonus-ativo').checked = data.bonus.ativo||false; }
+    if (data.config) { document.getElementById('cfg-wpp').value = data.config.wpp||''; document.getElementById('cfg-nome').value = data.config.nome||'Studio Voxel 3D'; document.getElementById('cfg-com').value = data.config.comissao||30; }
     updateDash();
-  }).catch(()=>{
+    showSyncStatus(true);
+  }).catch(function() {
+    renderClientes(); renderVitrine(); renderMovs(); renderAcertos(); renderPedidos(); renderBonus();
+    updateDash();
     showSyncStatus(false);
-  if (data.contrato) { document.getElementById('contratoEditor').value = data.contrato; document.getElementById('contratoPreview').textContent = data.contrato; }
-  if (data.bonus) { document.getElementById('bonus-meta').value = data.bonus.meta||10; document.getElementById('bonus-brinde').value = data.bonus.brinde||''; document.getElementById('bonus-desc').value = data.bonus.desc||''; document.getElementById('bonus-ativo').checked = data.bonus.ativo||false; }
-  if (data.config) { document.getElementById('cfg-wpp').value = data.config.wpp||''; document.getElementById('cfg-nome').value = data.config.nome||'Studio Voxel 3D'; document.getElementById('cfg-com').value = data.config.comissao||30; }
+  });
 }
 
 function showPage(page, el) {
