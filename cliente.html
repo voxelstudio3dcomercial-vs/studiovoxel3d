@@ -304,7 +304,7 @@ body{font-family:'Rajdhani',sans-serif;background:var(--bg);color:var(--text);mi
     <div class="modal-title">📍 Dados para Entrega</div>
     <div class="modal-sub">Primeiro pedido! Preencha seus dados. Ficará salvo para os próximos.</div>
     <input class="inp-plain" type="text" id="end-nome" placeholder="Nome completo">
-    <input class="inp-plain" type="tel" id="end-tel" placeholder="Telefone / WhatsApp com DDD">
+    <input class="inp-plain" type="tel" id="end-tel" placeholder="Ex: 11999999999" maxlength="15">
     <input class="inp-plain" type="text" id="end-rua" placeholder="Rua e número">
     <input class="inp-plain" type="text" id="end-bairro" placeholder="Bairro">
     <input class="inp-plain" type="text" id="end-cidade" placeholder="Cidade">
@@ -395,8 +395,11 @@ function doLogin(){
   }else showErr('loginErr','⚠ Senha incorreta');
 }
 
-function validarEmail(e){return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e);}
-function validarTel(t){return t.replace(/\D/g,'').length>=10;}
+function validarEmail(e){
+  const re = /^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$/;
+  return re.test(String(e).toLowerCase());
+}
+function validarTel(t){const nums=t.replace(/\D/g,"");return nums.length>=10&&nums.length<=11;}
 function doCadastro(){
   loadAdminData();
   const nome=document.getElementById('cad-nome').value.trim();
