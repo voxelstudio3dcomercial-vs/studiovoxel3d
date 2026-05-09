@@ -195,7 +195,7 @@ body{font-family:'Rajdhani',sans-serif;background:var(--bg);color:var(--text);mi
     <div class="auth-title">Criar Conta de Parceiro</div>
     <input class="inp-plain" type="text" id="cad-nome" placeholder="Nome / nome da loja">
     <input class="inp-plain" type="email" id="cad-email" placeholder="E-mail">
-    <input class="inp-plain" type="tel" id="cad-wpp" placeholder="Ex: 11999999999">
+    <input class="inp-plain" type="text" id="cad-wpp" placeholder="Ex: 11999999999" inputmode="numeric">
     <div class="input-wrap">
       <input class="inp" type="password" id="cad-senha" placeholder="Crie uma senha">
       <button class="eye-btn" onclick="toggleEye('cad-senha',this)">👁</button>
@@ -396,7 +396,7 @@ function validarEmail(e){
   const re = /^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$/;
   return re.test(String(e).toLowerCase());
 }
-function validarTel(t){const nums=t.replace(/\D/g,"");return nums.length>=10&&nums.length<=11;}
+function validarTel(t){return t.replace(/[^0-9]/g,"").length>=10;}
 function doCadastro(){
   loadAdminData();
   const nome=document.getElementById('cad-nome').value.trim();
