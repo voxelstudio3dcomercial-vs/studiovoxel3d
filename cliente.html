@@ -343,6 +343,23 @@ async function syncSave(dataObj) {
 }
 // ===== FIM SINCRONIZAÇÃO =====
 
+const API_KEY = '$2a$10$SUKnGGmCXoa5SDqEAkE5p.SZIIK27EadNFMxfucoChmmin3UbtNYG';
+const API_URL = 'https://api.jsonbin.io/v3/b';
+const BIN_ID = '69ff8e0b250b1311c328930e';
+
+async function cloudLoad() {
+  try {
+    const res = await fetch(API_URL + '/' + BIN_ID + '/latest', {headers:{'X-Master-Key':API_KEY}});
+    const d = await res.json();
+    return d.record || null;
+  } catch(e) { return null; }
+}
+async function cloudSave(obj) {
+  try {
+    await fetch(API_URL + '/' + BIN_ID, {method:'PUT',headers:{'Content-Type':'application/json','X-Master-Key':API_KEY},body:JSON.stringify(obj)});
+  } catch(e) {}
+}
+
 let minhaLoja=null,adminData=null,pedidoQtds={},pedidosPendentes=[];
 
 window.onload=()=>{
