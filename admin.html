@@ -512,14 +512,29 @@ textarea{resize:vertical;min-height:80px}
 
 const API_KEY = '$2a$10$SUKnGGmCXoa5SDqEAkE5p.SZIIK27EadNFMxfucoChmmin3UbtNYG';
 const API_URL = 'https://api.jsonbin.io/v3/b';
-const BIN_ID = '69ff8e0b250b1311c328930e';
+let BIN_ID = localStorage.getItem('voxel_bin_id') || null;
 let isSyncing = false;
 
+async function initBin() {
+  if (BIN_ID) return true;
+  try {
+    const res = await fetch(API_URL, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json','X-Master-Key':API_KEY,'X-Bin-Name':'voxel3d-dados'},
+      body: JSON.stringify({clientes:[],produtos:[],movs:[],acertos:[],pedidos:[],contrato:'',bonus:{meta:10,brinde:'',desc:'',ativo:false},config:{wpp:'',nome:'Studio Voxel 3D',comissao:30}})
+    });
+    const d = await res.json();
+    if (d.metadata && d.metadata.id) {
+      BIN_ID = d.metadata.id;
+      localStorage.setItem('voxel_bin_id', BIN_ID);
+      return true;
+    }
   } catch(e) { console.log('initBin error:', e); }
   return false;
 }
 
 async function cloudLoad() {
+  if (!BIN_ID) { await initBin(); }
   if (!BIN_ID) return null;
   try {
     const res = await fetch(API_URL + '/' + BIN_ID + '/latest', {
@@ -531,6 +546,7 @@ async function cloudLoad() {
 }
 
 async function cloudSave(obj) {
+  if (!BIN_ID) { await initBin(); }
   if (!BIN_ID || isSyncing) return;
   isSyncing = true;
   try {
