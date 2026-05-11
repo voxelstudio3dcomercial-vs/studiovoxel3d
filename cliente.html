@@ -358,11 +358,13 @@ function closeSidebar(){
 function toggleEye(id,btn){const el=document.getElementById(id);el.type=el.type==='password'?'text':'password';btn.textContent=el.type==='password'?'👁':'🙈';}
 function showScreen(id){['screenLogin','screenCadastro'].forEach(s=>document.getElementById(s).style.display='none');document.getElementById(id).style.display='flex';}
 async function loadAdminDataRemote() {
-  loadAdminData();
-  const remote = await syncLoad();
+  // Sempre busca da nuvem primeiro para ter dados atualizados
+  const remote = await cloudLoad();
   if (remote) {
     adminData = remote;
     try { localStorage.setItem('voxel_admin', JSON.stringify(adminData)); } catch(e){}
+  } else {
+    loadAdminData();
   }
 }
 function loadAdminData(){try{const d=localStorage.getItem('voxel_admin');if(d)adminData=JSON.parse(d);}catch(e){adminData=null;}}
@@ -386,7 +388,6 @@ function validarEmail(e){
 }
 function validarTel(t){return t.replace(/[^0-9]/g,"").length>=10;}
 function doCadastro(){
-  loadAdminData();
   const nome=document.getElementById('cad-nome').value.trim();
   const email=document.getElementById('cad-email').value.trim();
   const wpp=document.getElementById('cad-wpp').value.trim();
@@ -396,15 +397,24 @@ function doCadastro(){
   if(!validarEmail(email))return showErr('cadErr','⚠ E-mail inválido');
   if(!validarTel(wpp))return showErr('cadErr','⚠ WhatsApp inválido — mínimo 10 dígitos');
   if(s1!==s2)return showErr('cadErr','⚠ Senhas não coincidem');
-  if(!adminData)adminData={clientes:[],produtos:[],movs:[],acertos:[],pedidos:[],contrato:'',bonus:{meta:10,brinde:'',desc:'',ativo:false},config:{}};
-  if(!adminData.clientes)adminData.clientes=[];
-  if(adminData.clientes.find(c=>c.email===email))return showErr('cadErr','⚠ E-mail já cadastrado');
-  const novo={id:Date.now(),nome,email,whatsapp:wpp,senha:s1,comissao:adminData.config?.comissao||30,status:'Ativo',dataCadastro:new Date().toLocaleDateString('pt-BR'),endereco:null};
-  adminData.clientes.push(novo);
-  localStorage.setItem('voxel_admin',JSON.stringify(adminData));
-  syncSave(adminData);
-  notify('Cadastro realizado! Entrando...');
-  setTimeout(()=>entrarApp(novo),800);
+  // Buscar dados atualizados da nuvem antes de verificar email
+  showErr('cadErr','⏳ Verificando...');
+  document.getElementById('cadErr').style.color='var(--blue)';
+  document.getElementById('cadErr').style.display='block';
+  loadAdminDataRemote().then(()=>{
+    document.getElementById('cadErr').style.display='none';
+    if(!adminData)adminData={clientes:[],produtos:[],movs:[],acertos:[],pedidos:[],contrato:'',bonus:{meta:10,brinde:'',desc:'',ativo:false},config:{}};
+    if(!adminData.clientes)adminData.clientes=[];
+    if(adminData.clientes.find(c=>c.email===email))return showErr('cadErr','⚠ E-mail já cadastrado');
+    const novo={id:Date.now(),nome,email,whatsapp:wpp,senha:s1,comissao:adminData.config?.comissao||30,status:'Ativo',dataCadastro:new Date().toLocaleDateString('pt-BR'),endereco:null};
+    adminData.clientes.push(novo);
+    localStorage.setItem('voxel_admin',JSON.stringify(adminData));
+    cloudSave(adminData);
+    notify('Cadastro realizado! Entrando...');
+    setTimeout(()=>entrarApp(novo),800);
+  }).catch(()=>{
+    showErr('cadErr','⚠ Erro de conexão. Tente novamente.');
+  });
 }
 
 function entrarApp(cli){
