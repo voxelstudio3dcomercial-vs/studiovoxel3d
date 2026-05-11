@@ -239,7 +239,7 @@ textarea{resize:vertical;min-height:80px}
   .calc-grid { grid-template-columns: 1fr; }
   .form-row { grid-template-columns: 1fr; }
   .content { padding: 14px; }
-  th, td { padding: 8px 8px; font-size: 12px; }
+  th, td { padding: 8px; font-size: 12px; }
 }
 </style>
 </head>
@@ -281,16 +281,16 @@ textarea{resize:vertical;min-height:80px}
     <div class="nav-item" onclick="showPage('bonus',this)"><span class="icon">🎁</span>Bônus</div>
     <div class="nav-item" onclick="showPage('configuracoes',this)"><span class="icon">⚙️</span>Configurações</div>
   </nav>
-  <div class="sidebar-footer">v3.0 · Studio Voxel 3D<br><span style="color:var(--green)">● admin</span> <span id="syncStatus" style="font-size:9px;color:var(--text3)">☁️ sync</span> <span style="float:right;cursor:pointer;color:var(--text3)" onclick="logout()">sair</span></div>
+  <div class="sidebar-footer">v3.0 · Studio Voxel 3D<br><span style="color:var(--green)">● admin</span> <span id="syncStatus" style="font-size:9px;color:var(--text3)">☁️</span> <span style="float:right;cursor:pointer;color:var(--text3)" onclick="logout()">sair</span></div>
 </aside>
 
 <div class="sidebar-overlay" id="adminSidebarOverlay" onclick="closeSidebar()"></div>
 
 <!-- MAIN -->
 <div class="main" id="mainEl" style="display:none">
-  
+  <div class="sidebar-overlay" id="adminSidebarOverlay" onclick="closeSidebar()"></div>
 <div class="topbar">
-    <button id="hambBtn" onclick="toggleSidebar()" style="background:none;border:1px solid var(--border);border-radius:6px;padding:6px 10px;cursor:pointer;color:var(--text);font-size:18px;margin-right:10px;display:none">☰</button><span class="page-title" id="pageTitle">PAINEL</span>
+    <button class="hamburger" id="hambBtn" onclick="toggleSidebar()" style="display:none;background:none;border:1px solid var(--border);border-radius:6px;padding:6px 10px;cursor:pointer;color:var(--text);font-size:18px;margin-right:10px">☰</button><button id="hambBtn" onclick="toggleSidebar()" style="background:none;border:1px solid var(--border);border-radius:6px;padding:6px 10px;cursor:pointer;color:var(--text);font-size:18px;margin-right:10px;display:none">☰</button><span class="page-title" id="pageTitle">PAINEL</span>
     <button class="btn btn-primary" id="topbarActionBtn" onclick="openModalByPage()">+ Nova Ação</button>
   </div>
   <div class="content">
@@ -510,70 +510,44 @@ textarea{resize:vertical;min-height:80px}
 <div class="notification" id="notif">✓ <span id="notif-text">Salvo!</span></div>
 <script>
 
-const BIN_ID = '69ff51d7adc21f119a7718c7';
 const API_KEY = '$2a$10$SUKnGGmCXoa5SDqEAkE5p.SZIIK27EadNFMxfucoChmmin3UbtNYG';
 const API_URL = 'https://api.jsonbin.io/v3/b';
-let BIN_ID = localStorage.getItem('voxel_bin_id') || null;
+const BIN_ID = '69ff51d7adc21f119a7718c7';
 let isSyncing = false;
 
-async function initBin() {
-  if (BIN_ID) return true;
-  try {
-    const res = await fetch(API_URL, {
-      method: 'POST',
-      headers: {'Content-Type':'application/json','X-Master-Key':API_KEY,'X-Bin-Name':'voxel3d-dados'},
-      body: JSON.stringify({clientes:[],produtos:[],movs:[],acertos:[],pedidos:[],contrato:'',bonus:{meta:10,brinde:'',desc:'',ativo:false},config:{wpp:'',nome:'Studio Voxel 3D',comissao:30}})
-    });
-    const d = await res.json();
-    if (d.metadata && d.metadata.id) {
-      BIN_ID = d.metadata.id;
-      localStorage.setItem('voxel_bin_id', BIN_ID);
-      return true;
-    }
-  } catch(e) { console.log('initBin error:', e); }
-  return false;
-}
-
 async function cloudLoad() {
-  if (!BIN_ID) { await initBin(); }
-  if (!BIN_ID) return null;
   try {
-    const res = await fetch(API_URL + '/' + BIN_ID + '/latest', {
-      headers: {'X-Master-Key': API_KEY}
-    });
+    const res = await fetch(API_URL+'/'+BIN_ID+'/latest',{headers:{'X-Master-Key':API_KEY}});
     const d = await res.json();
     return d.record || null;
   } catch(e) { return null; }
 }
 
 async function cloudSave(obj) {
-  if (!BIN_ID) { await initBin(); }
-  if (!BIN_ID || isSyncing) return;
+  if(isSyncing) return;
   isSyncing = true;
   try {
-    await fetch(API_URL + '/' + BIN_ID, {
-      method: 'PUT',
-      headers: {'Content-Type':'application/json','X-Master-Key':API_KEY},
-      body: JSON.stringify(obj)
-    });
+    await fetch(API_URL+'/'+BIN_ID,{method:'PUT',headers:{'Content-Type':'application/json','X-Master-Key':API_KEY},body:JSON.stringify(obj)});
     showSyncStatus(true);
   } catch(e) { showSyncStatus(false); }
   isSyncing = false;
 }
 
 function showSyncStatus(ok) {
-  const el = document.getElementById('syncStatus');
-  if (el) { el.textContent = ok ? '☁️ sync' : '⚠️ offline'; el.style.color = ok ? 'var(--green)' : 'var(--orange)'; }
+  const el=document.getElementById('syncStatus');
+  if(el){el.textContent=ok?'☁️ sync':'⚠️ offline';el.style.color=ok?'var(--green)':'var(--orange)';}
 }
 
 function toggleSidebar() {
   document.getElementById('sidebarEl').classList.toggle('open');
   document.getElementById('adminSidebarOverlay').classList.toggle('open');
 }
+
 function closeSidebar() {
   document.getElementById('sidebarEl').classList.remove('open');
   document.getElementById('adminSidebarOverlay').classList.remove('open');
 }
+
 let ADMIN_PASS = localStorage.getItem('voxel_admin_pass') || 'Eqkzq301209$';
 let qtdMap = { pQtd:1, mQtd:1 };
 let prodImgData = '';
@@ -592,16 +566,6 @@ function toggleEye(inputId, btn) {
   else { el.type = 'password'; btn.textContent = '👁'; }
 }
 
-function toggleSidebar(){
-  const s=document.getElementById("sidebarEl");
-  const o=document.getElementById("adminSidebarOverlay");
-  s.classList.toggle("open");
-  o.classList.toggle("open");
-}
-function closeSidebar(){
-  document.getElementById("sidebarEl").classList.remove("open");
-  document.getElementById("adminSidebarOverlay").classList.remove("open");
-}
 
 function doLogin() {
   const p = document.getElementById('loginPass').value;
@@ -625,23 +589,25 @@ function saveData() {
   cloudSave(data);
 }
 function loadData() {
-  try { const d = localStorage.getItem('voxel_admin'); if(d) data = {...data, ...JSON.parse(d)}; } catch(e){}
+  try { const d = localStorage.getItem('voxel_admin'); if(d) data = Object.assign({}, data, JSON.parse(d)); } catch(e){}
   cloudLoad().then(function(remote) {
     if (remote) {
       data = Object.assign({}, data, remote);
       try { localStorage.setItem('voxel_admin', JSON.stringify(data)); } catch(e){}
+      showSyncStatus(true);
     }
-    renderClientes(); renderVitrine(); renderMovs(); renderAcertos(); renderPedidos(); renderBonus();
-    if (data.contrato) { document.getElementById('contratoEditor').value = data.contrato; document.getElementById('contratoPreview').textContent = data.contrato; }
-    if (data.bonus) { document.getElementById('bonus-meta').value = data.bonus.meta||10; document.getElementById('bonus-brinde').value = data.bonus.brinde||''; document.getElementById('bonus-desc').value = data.bonus.desc||''; document.getElementById('bonus-ativo').checked = data.bonus.ativo||false; }
-    if (data.config) { document.getElementById('cfg-wpp').value = data.config.wpp||''; document.getElementById('cfg-nome').value = data.config.nome||'Studio Voxel 3D'; document.getElementById('cfg-com').value = data.config.comissao||30; }
-    updateDash();
-    showSyncStatus(true);
+    renderAll();
   }).catch(function() {
-    renderClientes(); renderVitrine(); renderMovs(); renderAcertos(); renderPedidos(); renderBonus();
-    updateDash();
+    renderAll();
     showSyncStatus(false);
   });
+}
+
+function renderAll() {
+  renderClientes(); renderVitrine(); renderMovs(); renderAcertos(); renderPedidos(); renderBonus(); updateDash();
+  if (data.contrato) { document.getElementById('contratoEditor').value = data.contrato; document.getElementById('contratoPreview').textContent = data.contrato; }
+  if (data.bonus) { document.getElementById('bonus-meta').value = data.bonus.meta||10; document.getElementById('bonus-brinde').value = data.bonus.brinde||''; document.getElementById('bonus-desc').value = data.bonus.desc||''; document.getElementById('bonus-ativo').checked = data.bonus.ativo||false; }
+  if (data.config) { document.getElementById('cfg-wpp').value = data.config.wpp||''; document.getElementById('cfg-nome').value = data.config.nome||'Studio Voxel 3D'; document.getElementById('cfg-com').value = data.config.comissao||30; }
 }
 
 function showPage(page, el) {
