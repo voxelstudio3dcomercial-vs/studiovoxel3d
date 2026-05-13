@@ -7,6 +7,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="apple-mobile-web-app-title" content="Voxel Admin">
+<link rel="manifest" href="manifest-admin.json">
 <meta name="theme-color" content="#080808">
 <title>Studio Voxel 3D — Admin</title>
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Rajdhani:wght@300;400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
@@ -898,4 +899,14 @@ function fmt(n){return(n||0).toFixed(2).replace('.',',').replace(/\B(?=(\d{3})+(
 function clearFields(ids){ids.forEach(id=>{const el=document.getElementById(id);if(el)el.value='';})}
 function gerarCode(){return 'SVX-'+Math.floor(Math.random()*9000+1000);}
 function notify(msg,type){const n=document.getElementById('notif');document.getElementById('notif-text').textContent=msg;n.style.borderColor=type==='err'?'var(--orange)':'var(--green)';n.style.color=type==='err'?'var(--orange)':'var(--green)';n.classList.add('show');setTimeout(()=>n.classList.remove('show'),2500);}
-</script></body></html>
+</script>
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function() {
+    navigator.serviceWorker.register('/studiovoxel3d/sw.js')
+      .then(function(reg) { console.log('SW registrado!', reg.scope); })
+      .catch(function(err) { console.log('SW erro:', err); });
+  });
+}
+</script>
+</body></html>
